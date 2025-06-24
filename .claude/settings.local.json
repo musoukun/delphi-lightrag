@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(source:*)",
+      "Bash(./test_lightrag.sh:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(delphi-lightrag index:*)",
+      "Bash(delphi-lightrag search:*)",
+      "Bash(delphi-lightrag info:*)",
+      "Bash(git add:*)",
+      "Bash(docker-compose:*)",
+      "Bash(curl:*)",
+      "Bash(git clone:*)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "brave-search",
+    "git",
+    "github",
+    "discord",
+    "filesystem",
+    "Context7",
+    "scrapy-mcp",
+    "rag-server",
+    "powerpoint-generator",
+    "mastra",
+    "stripe"
+  ]
+}

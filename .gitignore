@@ -1,0 +1,85 @@
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# OS specific files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE directories
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+.coverage.*.*
+.coverage.*.*.*
+htmlcov/
+.tox/
+.nox/
+.hypothesis/
+pytest_cache/
+
+# Python build artifacts
+*.egg-info/
+*.egg
+build/
+dist/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.dist-info/
+
+# Storage directories
+lightrag_storage/
+qdrant_storage/
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+.cache/
+
+# Project specific
+delphi_exports/
+delphi-lightrag
+file_tracker.json
+
+# MCP configuration
+.mcp.json
+
+# Generated executable (from setup.py console_scripts)
+/delphi-lightrag
