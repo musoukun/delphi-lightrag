@@ -1,0 +1,11 @@
+{
+  "processed_files": [
+    "sample_delphi_project/Calculator.pas",
+    "sample_delphi_project/MainForm.dfm",
+    "sample_delphi_project/MainForm.pas"
+  ],
+  "last_processed": "sample_delphi_project/MainForm.pas",
+  "total_files": 3,
+  "completed_files": 3,
+  "last_update": "2025-06-24T21:54:32.436275"
+}
