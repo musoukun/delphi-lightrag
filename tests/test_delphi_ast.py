@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.delphi_ast_analyzer import DelphiASTAnalyzer
 import json
@@ -11,7 +11,8 @@ def main():
     analyzer = DelphiASTAnalyzer()
     
     # サンプルコードを読み込む
-    with open("sample_delphi_code.pas", "r") as f:
+    sample_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "sample_delphi_code.pas")
+    with open(sample_file, "r") as f:
         code = f.read()
     
     print("=== Delphi AST Analysis Test ===\n")

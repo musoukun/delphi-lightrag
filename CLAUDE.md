@@ -4,139 +4,117 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Delphi LightRAG is a sophisticated code analysis and retrieval system specifically designed for Delphi/Pascal codebases. It combines AST (Abstract Syntax Tree) analysis using tree-sitter-pascal with LightRAG for hybrid retrieval-augmented generation, enabling intelligent code search and understanding capabilities.
+Delphi LightRAG is a project for analyzing Delphi/Pascal code and building a RAG (Retrieval-Augmented Generation) system. It uses tree-sitter-pascal to parse Delphi code into AST (Abstract Syntax Tree) structures, making the code searchable and understandable.
 
 ## Common Development Commands
 
-### Docker-based Development (Recommended)
+### Initial Setup
 
 ```bash
-# Initial setup - creates .env, builds images, starts containers
-./setup.sh
+# Clone with submodules
+git clone <repository-url>
+cd delphi-lightrag
+git submodule init
+git submodule update
 
-# Run Python scripts in Docker
-./run-in-docker.sh python demo_delphi_ast_lightrag.py
-./run-in-docker.sh python test_delphi_ast.py
-
-# Interactive shell in Docker
-./run-in-docker.sh bash
-
-# Start API server
-docker-compose up api-server
-
-# View container status
-docker-compose ps
-
-# Stop all containers
-docker-compose down
+# Or add tree-sitter-pascal if missing
+git submodule add https://github.com/Isopod/tree-sitter-pascal.git
 ```
 
-### Local Development
+### Environment Setup
 
 ```bash
-# Install dependencies (in venv)
+# Create and activate virtual environment (Linux/Mac/WSL)
+python -m venv venv
+source venv/bin/activate
+
+# For Windows PowerShell
+python -m venv venv_windows
+.\venv_windows\Scripts\Activate.ps1
+
+# Install dependencies
 pip install -r requirements.txt
 
-# Run tests
-python test_delphi_ast.py
-
-# Run demos
-python demo_ast_analysis.py              # AST analysis only
-python demo_delphi_ast_lightrag.py      # Full LightRAG integration
-
-# Check configuration
-python check_config.py
-
-# Start Qdrant locally (if not using Docker)
-docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant
+# Copy environment configuration
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
 ```
 
-### API Testing
+### Running the Application
 
 ```bash
-# Health check
-curl http://localhost:8000/health
+# Run AST analysis demo
+python demo_ast_analysis.py
 
-# Analyze Delphi code
-curl -X POST http://localhost:8000/analyze -F "file=@sample_delphi_code.pas"
+# Run tests
+python tests/test_delphi_ast.py
 
-# Query the system
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "TSampleClassのメソッドについて教えてください", "mode": "hybrid"}'
+# Start Docker services (Qdrant + LightRAG)
+docker-compose up -d
 ```
 
 ## Architecture and Key Components
 
-### Core Modules
+### Core AST Analyzer
 
-1. **src/delphi_ast_analyzer.py** - The foundation module that uses tree-sitter-pascal to parse Delphi/Pascal code and extract AST structures (classes, functions, procedures). This is the core parsing engine.
+The `DelphiASTAnalyzer` class in `src/delphi_ast_analyzer.py` provides:
 
-2. **src/delphi_lightrag.py** - Main integration module that bridges AST analysis with LightRAG. Handles code parsing, entity extraction, knowledge graph building, and RAG queries. Uses async/await throughout.
+- **parse_code()**: Converts Delphi code to AST using tree-sitter-pascal
+- **extract_functions()**: Finds all functions, procedures, constructors, and destructors
+- **extract_classes()**: Identifies class declarations from type sections
+- **find_nodes_by_type()**: Generic AST traversal for specific node types
+- **analyze_ast()**: Returns complete AST structure as JSON-compatible dict
 
-3. **src/delphi_lightrag_server.py** - FastAPI server providing REST API endpoints for code analysis and queries. Includes file upload, analysis, and query endpoints.
+### Key Methods and Node Types
 
-4. **src/config.py** - Centralized configuration management that reads from environment variables and provides defaults. All configuration flows through this module.
+When analyzing Delphi code, the analyzer looks for:
 
-### Key Design Patterns
+- **Function/Procedure nodes**: `declProc`, `defProc`
+- **Class declarations**: `declType` containing `declClass`
+- **Variable declarations**: `declVar`
+- **Field declarations**: `declField`
+- **Property declarations**: `declProp`
+- **Uses clauses**: `declUses`
 
-- **Async First**: All LightRAG operations use Python's asyncio for better performance
-- **Configuration Driven**: Extensive use of environment variables via `src/config.py`
-- **Modular Architecture**: Clear separation between AST analysis, RAG integration, and API layers
-- **Docker-based Development**: Source code is mounted as volumes for real-time updates without rebuilds
+### Docker Architecture
 
-### Data Flow
+The project includes a `docker-compose.yml` that sets up:
 
-1. Delphi/Pascal code → tree-sitter-pascal → AST
-2. AST → Entity/Relationship extraction → LightRAG knowledge graph
-3. LightRAG + Qdrant vector DB → Hybrid search (local/global/naive)
-4. Search results + OpenAI GPT-4 → Intelligent responses
+1. **Qdrant** (port 6333): Vector database for storing code embeddings
+2. **LightRAG** (ports 8080, 3000): RAG API server and web UI
 
-### Storage Directories
+## Key Implementation Details
 
-- `lightrag_storage/` - LightRAG knowledge graphs and indexes
-- `qdrant_storage/` - Qdrant vector database persistent storage
-- `rag_storage/` - RAG system artifacts
-- `data/` - Input/output data for processing
-- `delphi_exports/` - Exported analysis results
+### AST Analysis Flow
 
-## Environment Configuration
+1. Tree-sitter-pascal parses Delphi source into C-based AST
+2. Python bindings traverse the AST tree structure
+3. Specific patterns identify code elements:
+   - Functions/procedures check for `kFunction`/`kProcedure` child nodes
+   - Class names extracted from `identifier` nodes within `declType`
+   - Implementation methods use `genericDot` pattern for `ClassName.MethodName`
 
-The project uses `.env` file for configuration. Key variables:
+### Testing Approach
 
-- `OPENAI_API_KEY` - Required for LLM and embeddings
-- `LLM_MODEL` - Default: gpt-4o-mini
-- `EMBEDDING_MODEL` - Default: text-embedding-3-large
-- `QDRANT_HOST/PORT` - Vector database connection
-- `LIGHTRAG_MODE` - Search mode: hybrid/local/global/naive
-- `LIGHTRAG_CHUNK_SIZE/OVERLAP` - Text chunking parameters
+Tests use the sample file `sample_delphi_code.pas` and verify:
+- AST structure generation
+- Function/procedure extraction accuracy
+- Class detection
+- Node type counting
 
-## Testing Approach
+## Important Configuration
 
-- Unit tests: `test_delphi_ast.py` - Tests AST analyzer functionality
-- Integration demos: `demo_*.py` files demonstrate various features
-- No specific test framework - tests are simple Python scripts
-- Docker environment ensures consistent testing
+### Required Environment Variables
 
-## Key Dependencies
+- `OPENAI_API_KEY`: Required for LightRAG embeddings and LLM features
+- `QDRANT_HOST`/`QDRANT_PORT`: Vector database connection (defaults: localhost:6333)
+- `LLM_MODEL`: OpenAI model selection (default: gpt-4o-mini)
+- `EMBEDDING_MODEL`: Embedding model (default: text-embedding-3-large)
 
-- `lightrag-hku>=1.3.7` - Core RAG framework
-- `tree-sitter>=0.20.0` + `tree-sitter-pascal` - AST parsing
-- `qdrant-client>=1.7.0` - Vector database
-- `openai>=1.0.0` - LLM integration
-- `fastapi>=0.100.0` + `uvicorn>=0.23.0` - Web API
+### Project Dependencies
 
-## Development Notes
-
-1. **Tree-sitter Compilation**: The tree-sitter-pascal grammar needs C/C++ compilation. This is handled automatically in the Docker build.
-
-2. **Real-time Code Updates**: When using Docker, source code changes are immediately reflected without container rebuilds due to volume mounts.
-
-3. **API Server**: The FastAPI server (`src/delphi_lightrag_server.py`) runs on port 8000 and provides endpoints for file analysis and queries.
-
-4. **Hybrid Search**: LightRAG supports three search modes:
-   - Local: Entity-based search
-   - Global: Community/cluster-based search
-   - Hybrid: Combines both for best results
-
-5. **Language Support**: While UI strings are in Japanese, the system works with English or Japanese for queries (configurable via `LIGHTRAG_LANGUAGE`).
+The project requires:
+- Python 3.8+
+- C/C++ compiler for tree-sitter compilation
+- Docker & Docker Compose (optional, for full RAG stack)
+- OpenAI API access for RAG features

@@ -14,11 +14,12 @@
       "Bash(docker-compose:*)",
       "Bash(curl:*)",
       "Bash(git clone:*)",
-      "Bash(touch:*)",
-      "Bash(rm:*)",
-      "Bash(mv:*)",
       "Bash(ls:*)",
-      "Bash(./run-in-docker.sh python:*)"
+      "Bash(pip3 install:*)",
+      "Bash(venv/Scripts/python.exe test_process_delphi.py:*)",
+      "Bash(docker logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(venv/Scripts/python.exe process_delphi_code.py:*)"
     ]
   },
   "enabledMcpjsonServers": [
