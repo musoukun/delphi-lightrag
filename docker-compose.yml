@@ -19,7 +19,7 @@ services:
     image: ghcr.io/hkuds/lightrag:latest
     container_name: delphi-lightrag
     ports:
-      - "8080:8080"  # API port
+      - "8080:9621"  # API port
       - "3000:3000"  # Web UI port
     volumes:
       - ./lightrag_storage:/app/lightrag_storage
@@ -30,6 +30,9 @@ services:
       - OPENAI_EMBEDDING_API_BASE=${OPENAI_EMBEDDING_API_BASE:-https://api.openai.com/v1}
       - LLM_MODEL=${LLM_MODEL:-gpt-4o-mini}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-text-embedding-3-large}
+      - EMBEDDING_DIM=3072
+      - LLM_BINDING=openai
+      - EMBEDDING_BINDING=openai
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_URL=http://qdrant:6333

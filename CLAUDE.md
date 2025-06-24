@@ -8,117 +8,113 @@ Delphi LightRAG is a project for analyzing Delphi/Pascal code and building a RAG
 
 ## Common Development Commands
 
+### Initial Setup
+
+```bash
+# Clone with submodules
+git clone <repository-url>
+cd delphi-lightrag
+git submodule init
+git submodule update
+
+# Or add tree-sitter-pascal if missing
+git submodule add https://github.com/Isopod/tree-sitter-pascal.git
+```
+
 ### Environment Setup
 
 ```bash
-# Create and activate virtual environment (Linux/Mac)
+# Create and activate virtual environment (Linux/Mac/WSL)
 python -m venv venv
 source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
 
 # For Windows PowerShell
 python -m venv venv_windows
 .\venv_windows\Scripts\Activate.ps1
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Copy environment configuration
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
 ```
 
-### Running Tests and Demos
+### Running the Application
 
 ```bash
 # Run AST analysis demo
 python demo_ast_analysis.py
 
 # Run tests
-python test_delphi_ast.py
+python tests/test_delphi_ast.py
+
+# Start Docker services (Qdrant + LightRAG)
+docker-compose up -d
 ```
 
 ## Architecture and Key Components
 
-### Core Module
+### Core AST Analyzer
 
-**src/delphi_ast_analyzer.py** - The main AST analyzer that:
-- Uses tree-sitter-pascal to parse Delphi/Pascal code
-- Extracts code structures (classes, functions, procedures, types)
-- Provides methods for analyzing and traversing the AST
-- Supports pattern matching and code intelligence features
+The `DelphiASTAnalyzer` class in `src/delphi_ast_analyzer.py` provides:
 
-### Key Files
+- **parse_code()**: Converts Delphi code to AST using tree-sitter-pascal
+- **extract_functions()**: Finds all functions, procedures, constructors, and destructors
+- **extract_classes()**: Identifies class declarations from type sections
+- **find_nodes_by_type()**: Generic AST traversal for specific node types
+- **analyze_ast()**: Returns complete AST structure as JSON-compatible dict
 
-- **demo_ast_analysis.py** - Demonstrates AST analysis capabilities
-- **test_delphi_ast.py** - Test script for the AST analyzer
-- **sample_delphi_code.pas** - Sample Delphi code for testing
-- **requirements.txt** - Python dependencies including:
-  - lightrag>=0.1.0b6
-  - qdrant-client>=1.7.0
-  - tree-sitter>=0.20.0
-  - click>=8.0.0
-  - python-dotenv>=1.0.0
+### Key Methods and Node Types
 
-### Tree-sitter-pascal Integration
+When analyzing Delphi code, the analyzer looks for:
 
-The project includes tree-sitter-pascal as a git submodule for parsing Delphi/Pascal code. This provides:
-- Grammar-based parsing
-- Fast and accurate AST generation
-- Support for modern Delphi syntax features
+- **Function/Procedure nodes**: `declProc`, `defProc`
+- **Class declarations**: `declType` containing `declClass`
+- **Variable declarations**: `declVar`
+- **Field declarations**: `declField`
+- **Property declarations**: `declProp`
+- **Uses clauses**: `declUses`
 
-## Environment Configuration
+### Docker Architecture
 
-The project uses environment variables configured in `.env` (create from `.env.example`):
+The project includes a `docker-compose.yml` that sets up:
 
-```bash
-# OpenAI Configuration
-OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_API_BASE=https://api.openai.com/v1
-OPENAI_EMBEDDING_API_BASE=https://api.openai.com/v1
+1. **Qdrant** (port 6333): Vector database for storing code embeddings
+2. **LightRAG** (ports 8080, 3000): RAG API server and web UI
 
-# Model Settings
-LLM_MODEL=gpt-4o-mini
-EMBEDDING_MODEL=text-embedding-3-large
+## Key Implementation Details
 
-# Qdrant Vector Database
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_URL=http://localhost:6333
-QDRANT_COLLECTION=delphi_code
+### AST Analysis Flow
 
-# LightRAG Configuration
-LIGHTRAG_WORKING_DIR=./lightrag_storage
-LIGHTRAG_CHUNK_SIZE=1200
-LIGHTRAG_CHUNK_OVERLAP=100
-LIGHTRAG_MAX_ASYNC=4
-LIGHTRAG_MODE=hybrid
-LIGHTRAG_LANGUAGE=English
-```
+1. Tree-sitter-pascal parses Delphi source into C-based AST
+2. Python bindings traverse the AST tree structure
+3. Specific patterns identify code elements:
+   - Functions/procedures check for `kFunction`/`kProcedure` child nodes
+   - Class names extracted from `identifier` nodes within `declType`
+   - Implementation methods use `genericDot` pattern for `ClassName.MethodName`
 
-## Project Structure
+### Testing Approach
 
-```
-delphi-lightrag/
-├── src/
-│   ├── __init__.py
-│   └── delphi_ast_analyzer.py    # Core AST analyzer
-├── tree-sitter-pascal/            # Submodule for Pascal grammar
-├── demo_ast_analysis.py           # Demo script
-├── test_delphi_ast.py            # Test script
-├── sample_delphi_code.pas        # Sample code
-├── requirements.txt              # Dependencies
-└── .env.example                  # Environment template
-```
+Tests use the sample file `sample_delphi_code.pas` and verify:
+- AST structure generation
+- Function/procedure extraction accuracy
+- Class detection
+- Node type counting
 
-## Key Features Implemented
+## Important Configuration
 
-1. **AST Analysis**: Parse and analyze Delphi/Pascal code structure
-2. **Code Intelligence**: Extract classes, methods, functions, and their relationships
-3. **Tree-sitter Integration**: Fast and accurate parsing using tree-sitter-pascal
+### Required Environment Variables
 
-## Development Notes
+- `OPENAI_API_KEY`: Required for LightRAG embeddings and LLM features
+- `QDRANT_HOST`/`QDRANT_PORT`: Vector database connection (defaults: localhost:6333)
+- `LLM_MODEL`: OpenAI model selection (default: gpt-4o-mini)
+- `EMBEDDING_MODEL`: Embedding model (default: text-embedding-3-large)
 
-1. **Tree-sitter Compilation**: The tree-sitter-pascal grammar requires C/C++ compilation. Ensure you have a C compiler installed.
+### Project Dependencies
 
-2. **Python Version**: Requires Python 3.8 or higher
-
-3. **Virtual Environment**: Different virtual environments may be needed for Windows vs Linux/Mac due to binary dependencies
-
-4. **Future Integration**: The project is designed to integrate with LightRAG and Qdrant for advanced code search and RAG capabilities
+The project requires:
+- Python 3.8+
+- C/C++ compiler for tree-sitter compilation
+- Docker & Docker Compose (optional, for full RAG stack)
+- OpenAI API access for RAG features
