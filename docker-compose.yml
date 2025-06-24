@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+    # Qdrantベクトルデータベース
+    qdrant:
+        image: qdrant/qdrant:latest
+        container_name: delphi-qdrant
+        ports:
+            - "6333:6333"
+            - "6334:6334"
+        volumes:
+            - ./qdrant_storage:/qdrant/storage
+        environment:
+            - QDRANT__SERVICE__HTTP_PORT=6333
+            - QDRANT__SERVICE__GRPC_PORT=6334
+            - QDRANT__LOG_LEVEL=INFO
+
+    # Python実行環境
+    python-runner:
+        build: .
+        container_name: delphi-python-runner
+        environment:
+            - OPENAI_API_KEY=${OPENAI_API_KEY}
+            - QDRANT_HOST=qdrant
+            - QDRANT_PORT=6333
+            - PYTHONPATH=/app
+            - PYTHONUNBUFFERED=1
+        volumes:
+            # ソースコードをマウント（リアルタイム反映）
+            - ./src:/app/src:ro
+            - ./demo_delphi_ast_lightrag.py:/app/demo_delphi_ast_lightrag.py:ro
+            - ./demo_ast_analysis.py:/app/demo_ast_analysis.py:ro
+            - ./demo_simple.py:/app/demo_simple.py:ro
+            - ./demo_simple_working.py:/app/demo_simple_working.py:ro
+            - ./test_delphi_ast.py:/app/test_delphi_ast.py:ro
+            - ./check_config.py:/app/check_config.py:ro
+            - ./test_env.py:/app/test_env.py:ro
+            - ./test_qdrant_connection.py:/app/test_qdrant_connection.py:ro
+            - ./debug_qdrant_issue.py:/app/debug_qdrant_issue.py:ro
+            - ./sample_delphi_code.pas:/app/sample_delphi_code.pas:ro
+            # データディレクトリは書き込み可能
+            - ./data:/app/data
+            - ./rag_storage:/app/rag_storage
+            - ./.env:/app/.env:ro
+        depends_on:
+            - qdrant
+        working_dir: /app
+        # 対話的シェルを起動（実行したいコマンドを入力可能）
+        stdin_open: true
+        tty: true
+        command: /bin/bash
+
+    # FastAPIサーバー（必要な場合に起動）
+    api-server:
+        build: .
+        container_name: delphi-api-server
+        environment:
+            - OPENAI_API_KEY=${OPENAI_API_KEY}
+            - QDRANT_HOST=qdrant
+            - QDRANT_PORT=6333
+            - PYTHONPATH=/app
+        volumes:
+            - ./src:/app/src:ro
+            - ./data:/app/data
+            - ./rag_storage:/app/rag_storage
+            - ./.env:/app/.env:ro
+        ports:
+            - "8000:8000"
+        depends_on:
+            - qdrant
+        command: python -m src.delphi_lightrag_server
+
+networks:
+    default:
+        name: delphi-lightrag-network

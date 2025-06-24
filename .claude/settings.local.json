@@ -13,7 +13,12 @@
       "Bash(git add:*)",
       "Bash(docker-compose:*)",
       "Bash(curl:*)",
-      "Bash(git clone:*)"
+      "Bash(git clone:*)",
+      "Bash(touch:*)",
+      "Bash(rm:*)",
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(./run-in-docker.sh python:*)"
     ]
   },
   "enabledMcpjsonServers": [
